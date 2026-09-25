@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Simple Roman Urdu and Urdu to English translator."
+    >
+
+    <title>UrduTranslate - Urdu to English Translator</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+</head>
+
+<body>
+
+    <main class="app">
+
+        <!-- Header -->
+        <header class="header">
+
+            <div class="logo">
+                <div class="logo-icon">U</div>
+
+                <div>
+                    <h1>UrduTranslate</h1>
+                    <p>Roman Urdu & Urdu → English</p>
+                </div>
+            </div>
+
+        </header>
+
+
+        <!-- Main Translator -->
+        <section class="translator-card">
+
+            <!-- Input -->
+            <div class="language-row">
+
+                <div class="language-title">
+                    <span class="language-dot"></span>
+                    Roman Urdu / Urdu
+                </div>
+
+                <button
+                    id="clearButton"
+                    class="small-button"
+                    type="button"
+                >
+                    Clear
+                </button>
+
+            </div>
+
+
+            <textarea
+                id="inputText"
+                placeholder="Type Roman Urdu or Urdu here..."
+                maxlength="5000"
+                spellcheck="false"
+            ></textarea>
+
+
+            <div class="input-bottom">
+
+                <span id="characterCount">
+                    0 / 5000
+                </span>
+
+                <button
+                    id="translateButton"
+                    class="translate-button"
+                    type="button"
+                >
+                    <span id="buttonText">Translate</span>
+                    <span
+                        id="loadingSpinner"
+                        class="spinner hidden"
+                    ></span>
+                </button>
+
+            </div>
+
+
+            <!-- Arrow -->
+            <div class="arrow">
+                ↓
+            </div>
+
+
+            <!-- Output -->
+            <div class="language-row">
+
+                <div class="language-title">
+                    <span class="language-dot english"></span>
+                    English
+                </div>
+
+                <button
+                    id="copyButton"
+                    class="small-button"
+                    type="button"
+                >
+                    Copy
+                </button>
+
+            </div>
+
+
+            <div
+                id="outputText"
+                class="output"
+            >
+                Your English translation will appear here.
+            </div>
+
+
+            <!-- Status -->
+            <div
+                id="statusMessage"
+                class="status"
+            ></div>
+
+        </section>
+
+
+        <!-- Examples -->
+        <section class="examples">
+
+            <h2>Try an example</h2>
+
+            <div class="example-list">
+
+                <button
+                    class="example"
+                    data-text="mujhe tumse baat karni hai"
+                >
+                    mujhe tumse baat karni hai
+                </button>
+
+                <button
+                    class="example"
+                    data-text="aap kaise hain?"
+                >
+                    aap kaise hain?
+                </button>
+
+                <button
+                    class="example"
+                    data-text="آپ کیسے ہیں؟"
+                >
+                    آپ کیسے ہیں؟
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- Footer -->
+        <footer class="footer">
+
+            <p>
+                Simple translation from Roman Urdu / Urdu to English.
+            </p>
+
+        </footer>
+
+    </main>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
