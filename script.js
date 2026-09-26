@@ -33,7 +33,7 @@ const examples =
    GEMINI CONFIGURATION
    ========================================================= */
 
-const GEMINI_API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
+const GEMINI_API_KEY = "AQ.Ab8RN6KVC7PagFUxE1OeMj2QFLzLWjC0x9Y9MyDgCL6R7b8eLg";
 
 const GEMINI_MODEL =
     "gemini-3.8-flash";
