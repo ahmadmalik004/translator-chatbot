@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
 
@@ -11,10 +10,10 @@
 
     <meta
         name="description"
-        content="Simple Roman Urdu and Urdu to English translator."
+        content="Translate Roman Urdu and Urdu into natural English using Gemini AI."
     >
 
-    <title>UrduTranslate - Urdu to English Translator</title>
+    <title>UrduTranslate - AI Urdu to English Translator</title>
 
     <link
         rel="stylesheet"
@@ -29,99 +28,164 @@
         <!-- Header -->
         <header class="header">
 
-            <div class="logo">
-                <div class="logo-icon">U</div>
+            <div class="brand">
+                <div class="brand-icon">
+                    ✦
+                </div>
 
                 <div>
                     <h1>UrduTranslate</h1>
-                    <p>Roman Urdu & Urdu → English</p>
+
+                    <p>
+                        AI-powered Roman Urdu & Urdu translator
+                    </p>
                 </div>
+            </div>
+
+            <div class="ai-badge">
+                <span class="ai-dot"></span>
+                Gemini AI
             </div>
 
         </header>
 
 
-        <!-- Main Translator -->
+        <!-- Main Translator Card -->
         <section class="translator-card">
 
-            <!-- Input -->
+            <!-- Language selector row -->
             <div class="language-row">
 
-                <div class="language-title">
-                    <span class="language-dot"></span>
-                    Roman Urdu / Urdu
+                <div class="language-box">
+
+                    <span class="language-label">
+                        FROM
+                    </span>
+
+                    <strong>
+                        Roman Urdu / Urdu
+                    </strong>
+
                 </div>
 
-                <button
-                    id="clearButton"
-                    class="small-button"
-                    type="button"
-                >
-                    Clear
-                </button>
 
-            </div>
-
-
-            <textarea
-                id="inputText"
-                placeholder="Type Roman Urdu or Urdu here..."
-                maxlength="5000"
-                spellcheck="false"
-            ></textarea>
-
-
-            <div class="input-bottom">
-
-                <span id="characterCount">
-                    0 / 5000
-                </span>
-
-                <button
-                    id="translateButton"
-                    class="translate-button"
-                    type="button"
-                >
-                    <span id="buttonText">Translate</span>
-                    <span
-                        id="loadingSpinner"
-                        class="spinner hidden"
-                    ></span>
-                </button>
-
-            </div>
-
-
-            <!-- Arrow -->
-            <div class="arrow">
-                ↓
-            </div>
-
-
-            <!-- Output -->
-            <div class="language-row">
-
-                <div class="language-title">
-                    <span class="language-dot english"></span>
-                    English
+                <div class="swap-icon">
+                    →
                 </div>
 
-                <button
-                    id="copyButton"
-                    class="small-button"
-                    type="button"
-                >
-                    Copy
-                </button>
+
+                <div class="language-box">
+
+                    <span class="language-label">
+                        TO
+                    </span>
+
+                    <strong>
+                        English
+                    </strong>
+
+                </div>
 
             </div>
 
 
-            <div
-                id="outputText"
-                class="output"
-            >
-                Your English translation will appear here.
+            <!-- Translation Area -->
+            <div class="translation-area">
+
+                <!-- Input -->
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <span>
+                            Your text
+                        </span>
+
+                        <span
+                            id="characterCount"
+                            class="character-count"
+                        >
+                            0 / 5000
+                        </span>
+
+                    </div>
+
+
+                    <textarea
+                        id="inputText"
+                        maxlength="5000"
+                        placeholder="Type Roman Urdu or Urdu here...
+
+Example:
+mujhe tumse aik zaroori baat karni hai"
+                        autocomplete="off"
+                        spellcheck="false"
+                    ></textarea>
+
+
+                    <div class="panel-footer">
+
+                        <span class="input-hint">
+                            Roman Urdu, Urdu, slang & WhatsApp-style text supported
+                        </span>
+
+                        <button
+                            id="clearButton"
+                            class="clear-button"
+                            type="button"
+                        >
+                            Clear
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Output -->
+                <div class="panel output-panel">
+
+                    <div class="panel-header">
+
+                        <span>
+                            English translation
+                        </span>
+
+                        <button
+                            id="copyButton"
+                            class="copy-button"
+                            type="button"
+                        >
+                            Copy
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        id="outputText"
+                        class="output placeholder"
+                    >
+                        Your English translation will appear here...
+                    </div>
+
+
+                    <!-- Translation information -->
+                    <div
+                        id="translationInfo"
+                        class="translation-info hidden"
+                    >
+                        <span class="info-icon">
+                            ✦
+                        </span>
+
+                        <span id="translationInfoText">
+                            Gemini AI translation
+                        </span>
+                    </div>
+
+                </div>
+
             </div>
 
 
@@ -131,38 +195,68 @@
                 class="status"
             ></div>
 
-        </section>
+
+            <!-- Translate Button -->
+            <button
+                id="translateButton"
+                class="translate-button"
+                type="button"
+            >
+
+                <span id="buttonText">
+                    Translate with Gemini
+                </span>
+
+                <span
+                    id="loadingSpinner"
+                    class="spinner hidden"
+                ></span>
+
+            </button>
 
 
-        <!-- Examples -->
-        <section class="examples">
+            <!-- Examples -->
+            <div class="examples-section">
 
-            <h2>Try an example</h2>
+                <div class="examples-title">
+                    Try an example
+                </div>
 
-            <div class="example-list">
 
-                <button
-                    class="example"
-                    data-text="mujhe tumse baat karni hai"
-                >
-                    mujhe tumse baat karni hai
-                </button>
+                <div class="examples">
 
-                <button
-                    class="example"
-                    data-text="aap kaise hain?"
-                >
-                    aap kaise hain?
-                </button>
+                    <button
+                        type="button"
+                        class="example"
+                    >
+                        mujhe tumse baat karni hai
+                    </button>
 
-                <button
-                    class="example"
-                    data-text="آپ کیسے ہیں؟"
-                >
-                    آپ کیسے ہیں؟
-                </button>
+                    <button
+                        type="button"
+                        class="example"
+                    >
+                        mujhe samajh nahi aa rahi ke tum kya kehna chahtay ho
+                    </button>
+
+                    <button
+                        type="button"
+                        class="example"
+                    >
+                        kal agar tum free ho to hum bahar ja sakte hain
+                    </button>
+
+                    <button
+                        type="button"
+                        class="example"
+                    >
+                        مجھے نہیں معلوم وہ ایسا کیوں کر رہا ہے
+                    </button>
+
+                </div>
 
             </div>
+
 
         </section>
 
@@ -171,7 +265,13 @@
         <footer class="footer">
 
             <p>
-                Simple translation from Roman Urdu / Urdu to English.
+                UrduTranslate
+                <span>•</span>
+                Powered by Gemini AI
+            </p>
+
+            <p class="footer-note">
+                Built for natural Roman Urdu & Urdu → English translation
             </p>
 
         </footer>
@@ -179,8 +279,8 @@
     </main>
 
 
+    <!-- JavaScript -->
     <script src="script.js"></script>
 
 </body>
-
 </html>

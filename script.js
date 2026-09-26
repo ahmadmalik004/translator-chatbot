@@ -1,39 +1,23 @@
-/*
-===========================================================
-URDU TRANSLATE
-Roman Urdu / Urdu -> Natural English
-AI ENGINE: Google Gemini 3.5 Flash-Lite
-===========================================================
-*/
+/* =========================================================
+   UrduTranslate
+   Roman Urdu / Urdu / Mixed Language → English
+   Powered by Gemini AI
+   ========================================================= */
 
 
 /* =========================================================
    ELEMENTS
-========================================================= */
+   ========================================================= */
 
 const inputText = document.getElementById("inputText");
 const outputText = document.getElementById("outputText");
-
-const translateButton =
-    document.getElementById("translateButton");
-
-const clearButton =
-    document.getElementById("clearButton");
-
-const copyButton =
-    document.getElementById("copyButton");
-
-const characterCount =
-    document.getElementById("characterCount");
-
-const statusMessage =
-    document.getElementById("statusMessage");
-
-const buttonText =
-    document.getElementById("buttonText");
-
-const loadingSpinner =
-    document.getElementById("loadingSpinner");
+const translateButton = document.getElementById("translateButton");
+const clearButton = document.getElementById("clearButton");
+const copyButton = document.getElementById("copyButton");
+const characterCount = document.getElementById("characterCount");
+const statusMessage = document.getElementById("statusMessage");
+const buttonText = document.getElementById("buttonText");
+const loadingSpinner = document.getElementById("loadingSpinner");
 
 const translationInfo =
     document.getElementById("translationInfo");
@@ -47,957 +31,705 @@ const examples =
 
 /* =========================================================
    GEMINI CONFIGURATION
-========================================================= */
+   ========================================================= */
 
-/*
-    IMPORTANT:
-
-    Paste your Google Gemini API key here.
-
-    Example:
-
-    const GEMINI_API_KEY = "AIzaSyxxxxxxxxxxxxxxxx";
-
-    DO NOT share this key publicly.
-
-    This is Option A, so the key is placed directly
-    in the browser JavaScript for testing.
-*/
-
-const GEMINI_API_KEY =
-    "PASTE_YOUR_GEMINI_API_KEY_HERE";
-
-
-/*
-    Fast Gemini model.
-
-    Google currently lists Gemini 3.5 Flash-Lite
-    as a fast, low-cost model.
-*/
+const GEMINI_API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
 
 const GEMINI_MODEL =
-    "gemini-3.5-flash-lite";
-
-
-/*
-    Gemini REST API endpoint.
-*/
+    "gemini-3.8-flash";
 
 const GEMINI_ENDPOINT =
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 
 /* =========================================================
-   TRANSLATOR INSTRUCTIONS
-========================================================= */
+   SETTINGS
+   ========================================================= */
+
+const MAX_LENGTH = 5000;
+
+const REQUEST_TIMEOUT = 30000;
+
+/*
+   Number of attempts for temporary Gemini errors.
+
+   Attempt 1
+   ↓
+   wait
+   ↓
+   Attempt 2
+   ↓
+   wait
+   ↓
+   Attempt 3
+*/
+
+const MAX_RETRIES = 3;
+
+
+/* =========================================================
+   TRANSLATION INSTRUCTIONS
+   ========================================================= */
 
 const SYSTEM_INSTRUCTION = `
-You are an expert Pakistani Roman Urdu and Urdu to English translator.
+You are an expert Pakistani Roman Urdu, Urdu, and mixed-language
+to English translator.
 
 Your ONLY job is translation.
 
-Translate the user's complete message into natural, fluent English.
+Translate the user's COMPLETE message into natural, fluent English.
 
-The user may write:
+IMPORTANT RULES:
 
-- Roman Urdu
-- Urdu script
-- Pakistani Urdu
-- informal Roman Urdu
-- WhatsApp-style Roman Urdu
-- texting language
-- slang
-- shortened words
-- spelling mistakes
-- mixed Urdu and English
-- casual conversation
-- formal conversation
+1. Understand the complete sentence before translating.
 
-IMPORTANT:
+2. NEVER translate Roman Urdu word-by-word.
 
-Roman Urdu has no single standard spelling.
+3. Understand Pakistani conversational language.
 
-Understand different spellings of the same Urdu word.
+4. Understand informal Pakistani Roman Urdu.
+
+5. Understand WhatsApp-style Roman Urdu.
+
+6. Understand Pakistani slang.
+
+7. Understand abbreviations and shortened texting.
 
 Examples:
+
+mjy = mujhe
+mjhy = mujhe
+mujy = mujhe
+mjhe = mujhe
+
+tm = tum
+tmy = tumhe / tumhein
+
+ap = aap
+
+kr = kar
+krna = karna
+krta = karta
+krti = karti
+
+nhi = nahi
+nai = nahi
+ni = nahi
+nh = nahi
+
+smjh = samajh
+smj = samajh
+
+rha = raha
+rhi = rahi
+
+hn = hain
+hy = hai
+
+bht = bohat
+boht = bohat
+
+agr = agar
+
+q = kyun
+kyu = kyun
+kyon = kyun
+
+These are ONLY examples.
+
+DO NOT depend on this list.
+
+If a Roman Urdu word is not in this list,
+infer its meaning from the complete sentence
+and Pakistani conversational context.
+
+8. Understand different spellings of the same Roman Urdu word.
+
+For example:
 
 mujhe
-mujhy
+mjy
+mjhe
 muje
 mujy
-mujhay
+mujhy
 
-main
-mein
-mai
-mn
+can all represent the same intended word depending on context.
 
-tum
-tm
+9. Handle spelling mistakes.
 
-tumse
-tmse
-tum sy
-tm sy
+For example:
 
-kya
-kia
-kiya
+"mjy smjh ni aa rhi k tm kya kehna chahty ho"
 
-kyun
-kyu
-q
+should be understood as:
 
-nahi
-nahin
-nai
-ni
+"mujhe samajh nahi aa rahi ke tum kya kehna chahtay ho"
 
-hai
-hy
+and translated naturally.
 
-hain
-hen
-han
+10. Handle MIXED ENGLISH + ROMAN URDU.
 
-raha
-rha
+For example:
 
-rahi
-rhi
+"yaar mujhe ye idea honestly bilkul pasand nahi aya"
 
-rahe
-rhe
+should become natural English such as:
 
-karna
-krna
+"Honestly, I really didn't like this idea."
 
-karta
-krta
+Translate the COMPLETE message.
 
-karti
-krti
+Do not leave Roman Urdu untranslated.
 
-bohat
-bahut
-bht
+11. Handle WhatsApp-style messages.
 
-acha
-achha
+Example:
 
-theek
-thik
-tk
+"kal aa rhy ho ya nhi 😂"
 
-kaise
-kese
-kaisay
+should become natural English such as:
 
-aap
-ap
+"Are you coming tomorrow or not? 😂"
 
-aur
-or
+12. Handle slang and conversational expressions.
 
-ke
-k
+Examples include:
 
-ko
-ku
+yaar
+bro
+bhai
+scene kya hai
+kya scene hai
+chalo
+bas karo
+rehne do
+dimagh mat khao
+mood nahi hai
+faltu
+bakwas
+pagal ho kya
+mazak kar raha tha
+acha phir
+haan yaar
+nahi yaar
+dekho
+sun
 
-se
-sy
+Their exact English meaning depends on context.
 
-samajh
-smjh
+13. Do NOT assume slang has one fixed meaning.
 
-chahte
-chahty
+Always use the surrounding sentence.
 
-ja raha
-ja rha
+14. Preserve the original emotion.
 
-aa raha
-aa rha
+Casual → natural casual English.
 
-DO NOT translate Roman Urdu word-by-word.
+Formal → natural formal English.
 
-First understand the COMPLETE sentence.
+Funny → natural humorous English.
 
-Then translate its intended meaning.
+Angry → natural angry English.
 
-Use context.
+Romantic → natural romantic English.
 
-Examples:
+Emotional → natural emotional English.
 
-Input:
-mujhe tumse baat karni hai
+15. Preserve:
 
-Output:
-I need to talk to you.
+- names
+- numbers
+- dates
+- emojis
+- URLs
+- @mentions
+- hashtags
+- paragraph breaks
 
-Input:
-mujhy tum se baat krni hy
+16. Do not invent information.
 
-Output:
-I need to talk to you.
+17. Do not remove meaningful information.
 
-Input:
-mujy smjh ni aa rhi k tm kya kehna chahty ho
+18. If the input contains Urdu script and Roman Urdu,
+translate both.
 
-Output:
-I don't understand what you're trying to say.
+19. If the input contains English and Roman Urdu,
+translate the COMPLETE message naturally.
 
-Input:
-mujhy samajh nahi aa rahi ke tum kya kehna chahte ho
+20. Never fail just because the user made spelling mistakes.
 
-Output:
-I don't understand what you're trying to say.
+21. Never fail just because the message contains slang.
 
-Input:
-kal agar tum free ho to hum bahar ja sakte hain
+22. Never fail just because the message contains abbreviations.
 
-Output:
-If you're free tomorrow, we can go out.
+23. If a small part is ambiguous but the overall meaning is clear,
+translate the understandable meaning naturally.
 
-Input:
-main ne usko bola tha ke mujhe ye pasand nahi hai
+24. Do not ask the user to rewrite the message unless it is
+genuinely impossible to understand.
 
-Output:
-I told him/her that I don't like this.
+25. Return ONLY the English translation.
 
-Input:
-tum kahan ja rhy ho
+Do NOT write:
 
-Output:
-Where are you going?
+"Translation:"
+"Here is the translation:"
+"Sure!"
+"I can help with that."
 
-Input:
-mujhe kal subah jaldi uthna hai
+The final output must contain ONLY the English translation.
 
-Output:
-I have to wake up early tomorrow morning.
-
-Input:
-yaar mujhe bohat tension ho rahi hai
-
-Output:
-Man, I'm really stressed out.
-
-Input:
-aap kaise hain?
-
-Output:
-How are you?
-
-Input:
-آپ کیسے ہیں؟ مجھے امید ہے آپ ٹھیک ہوں گے۔
-
-Output:
-How are you? I hope you're doing well.
-
-RULES:
-
-1. Translate naturally.
-
-2. Do NOT translate word-by-word when that would sound unnatural.
-
-3. Preserve the original meaning.
-
-4. Preserve the emotional tone.
-
-5. Preserve names.
-
-6. Preserve numbers.
-
-7. Preserve emojis.
-
-8. Preserve URLs.
-
-9. Preserve paragraph breaks when useful.
-
-10. Casual Roman Urdu should produce natural casual English.
-
-11. Formal Urdu should produce natural formal English.
-
-12. If the input is already English, return natural English.
-
-13. If Urdu and English are mixed, translate the Urdu portion naturally while keeping appropriate English terms.
-
-14. Do not invent information.
-
-15. Do not explain the translation.
-
-16. Do not analyze the sentence.
-
-17. Do not say "Translation:".
-
-18. Do not put the answer inside quotation marks.
-
-19. Return ONLY the final English translation.
-
-20. Keep the translation concise unless the original message is long.
-
-Your response must contain ONLY the English translation.
+The target language is ALWAYS English.
 `;
 
 
 /* =========================================================
-   INPUT DETECTION
-========================================================= */
+   CHARACTER COUNT
+   ========================================================= */
 
-function containsUrdu(text) {
+function updateCharacterCount() {
 
-    return /[\u0600-\u06FF]/.test(text);
+    if (!inputText || !characterCount) {
+        return;
+    }
 
+    const length = inputText.value.length;
+
+    characterCount.textContent =
+        `${length} / ${MAX_LENGTH}`;
 }
 
 
-function looksLikeRomanUrdu(text) {
+inputText.addEventListener(
+    "input",
+    updateCharacterCount
+);
 
-    const romanUrduWords = [
 
-        "mujhe",
-        "mujhy",
-        "muje",
-        "mujy",
-        "mujhay",
+/* =========================================================
+   STATUS
+   ========================================================= */
 
-        "main",
-        "mein",
-        "mai",
-        "mn",
+function showStatus(message, type = "") {
 
-        "tum",
-        "tm",
-
-        "tumse",
-        "tumsy",
-        "tmse",
-        "tmsy",
-
-        "aap",
-        "ap",
-
-        "kya",
-        "kia",
-        "kiya",
-
-        "kyun",
-        "kyu",
-        "q",
-
-        "nahi",
-        "nahin",
-        "nai",
-        "ni",
-
-        "hai",
-        "hy",
-
-        "hain",
-        "hen",
-        "han",
-
-        "raha",
-        "rha",
-
-        "rahi",
-        "rhi",
-
-        "rahe",
-        "rhe",
-
-        "karna",
-        "krna",
-
-        "karta",
-        "krta",
-
-        "karti",
-        "krti",
-
-        "karte",
-        "krte",
-
-        "bohat",
-        "bahut",
-        "bht",
-
-        "acha",
-        "achha",
-
-        "theek",
-        "thik",
-        "tk",
-
-        "kahan",
-        "kaha",
-
-        "kaise",
-        "kese",
-        "kaisay",
-
-        "kyun",
-        "kyu",
-
-        "jana",
-        "jaana",
-
-        "jao",
-        "jao",
-
-        "aana",
-        "ana",
-
-        "aaya",
-        "aya",
-
-        "aayi",
-        "ayi",
-
-        "shukriya",
-
-        "pyar",
-        "pyaar",
-
-        "samajh",
-        "smjh",
-
-        "samajhna",
-        "smjhna",
-
-        "chahte",
-        "chahty",
-
-        "chahiye",
-        "chaahiye",
-
-        "zaroori",
-        "zaruri",
-
-        "baat",
-
-        "bhi",
-        "bi",
-
-        "phir",
-        "fir",
-
-        "abhi",
-        "abi",
-
-        "kal",
-
-        "aaj",
-
-        "raat",
-
-        "subah",
-
-        "shaam",
-
-        "ghar",
-
-        "bahar",
-
-        "andar",
-
-        "dost",
-
-        "yaar",
-
-        "kyun",
-
-        "kuch",
-
-        "koi",
-
-        "kaise",
-
-        "kesa",
-
-        "aisa",
-
-        "esa",
-
-        "waisa",
-
-        "wesa",
-
-        "mujh",
-
-        "mera",
-
-        "meri",
-
-        "mere",
-
-        "tera",
-
-        "teri",
-
-        "tere",
-
-        "hum",
-
-        "ham",
-
-        "woh",
-
-        "wo",
-
-        "yeh",
-
-        "ye",
-
-        "usko",
-
-        "isko",
-
-        "mujhse",
-        "mujhsy",
-
-        "tumhara",
-        "tumhari",
-        "tumhare",
-
-        "mera",
-        "meri",
-        "mere",
-
-        "pasand",
-
-        "nahi",
-
-        "lagta",
-        "lgta",
-
-        "lagti",
-        "lgti",
-
-        "raha",
-        "rha",
-
-        "rahi",
-        "rhi",
-
-        "sakta",
-        "skta",
-
-        "sakti",
-        "skti",
-
-        "sakte",
-        "sakte",
-
-        "hona",
-        "huna",
-
-        "hoga",
-        "hogi",
-
-        "hona",
-
-        "chalo",
-        "chal",
-
-        "theek",
-
-        "problem",
-        "masla",
-
-        "madad",
-
-        "help",
-
-        "pata",
-        "pta",
-
-        "maloom",
-
-        "kyunke",
-        "kyunki",
-
-        "lekin",
-        "magar",
-
-        "agar",
-
-        "to",
-
-        "phir",
-
-        "jab",
-
-        "jabhi",
-
-        "jabtak",
-
-        "jabse",
-
-        "ab",
-
-        "abhi",
-
-        "pehle",
-
-        "baad",
-
-        "liye",
-
-        "liye",
-
-        "saath",
-
-        "sath"
-    ];
-
-
-    const words =
-        text
-            .toLowerCase()
-            .replace(/[^\p{L}\p{N}\s]/gu, " ")
-            .split(/\s+/)
-            .filter(Boolean);
-
-
-    let matches = 0;
-
-
-    for (const word of words) {
-
-        if (romanUrduWords.includes(word)) {
-
-            matches++;
-
-        }
-
+    if (!statusMessage) {
+        return;
     }
 
+    statusMessage.textContent = message;
 
-    /*
-        A single Roman Urdu word should not automatically
-        classify an entire English sentence as Roman Urdu.
-    */
+    statusMessage.className = "status";
 
-    if (matches >= 1 && words.length <= 3) {
-        return true;
+    if (type) {
+        statusMessage.classList.add(type);
     }
-
-
-    if (matches >= 2) {
-        return true;
-    }
-
-
-    return false;
-}
-
-
-function detectInputType(text) {
-
-    if (containsUrdu(text)) {
-
-        return "Urdu";
-
-    }
-
-
-    if (looksLikeRomanUrdu(text)) {
-
-        return "Roman Urdu";
-
-    }
-
-
-    return "Mixed / Auto-detect";
 }
 
 
 /* =========================================================
-   GEMINI TRANSLATION
-========================================================= */
+   LOADING
+   ========================================================= */
 
-async function translateWithGemini(text) {
+function setLoading(isLoading) {
 
-    /*
-        Check API key first.
-    */
+    if (!translateButton) {
+        return;
+    }
 
-    if (
-        !GEMINI_API_KEY ||
-        GEMINI_API_KEY ===
+    translateButton.disabled =
+        isLoading;
+
+
+    if (isLoading) {
+
+        if (buttonText) {
+            buttonText.textContent =
+                "Translating...";
+        }
+
+        if (loadingSpinner) {
+            loadingSpinner.classList.remove(
+                "hidden"
+            );
+        }
+
+    } else {
+
+        if (buttonText) {
+            buttonText.textContent =
+                "Translate with Gemini";
+        }
+
+        if (loadingSpinner) {
+            loadingSpinner.classList.add(
+                "hidden"
+            );
+        }
+    }
+}
+
+
+/* =========================================================
+   API KEY CHECK
+   ========================================================= */
+
+function hasValidApiKey() {
+
+    return (
+        GEMINI_API_KEY &&
+        GEMINI_API_KEY.trim() !== "" &&
+        GEMINI_API_KEY !==
         "PASTE_YOUR_GEMINI_API_KEY_HERE"
-    ) {
-
-        throw new Error(
-            "Gemini API key is missing. Add your API key in script.js."
-        );
-    }
-
-
-    /*
-        Build the Gemini request.
-    */
-
-    const requestBody = {
-
-        system_instruction: {
-
-            parts: [
-
-                {
-                    text: SYSTEM_INSTRUCTION
-                }
-
-            ]
-
-        },
-
-
-        contents: [
-
-            {
-
-                role: "user",
-
-                parts: [
-
-                    {
-                        text: text
-                    }
-
-                ]
-
-            }
-
-        ],
-
-
-        generationConfig: {
-
-            temperature: 0.1,
-
-            maxOutputTokens: 500
-
-        }
-
-    };
-
-
-    /*
-        Send request to Google Gemini.
-    */
-
-    const response =
-        await fetch(
-
-            GEMINI_ENDPOINT,
-
-            {
-
-                method: "POST",
-
-                headers: {
-
-                    "Content-Type":
-                        "application/json",
-
-                    "x-goog-api-key":
-                        GEMINI_API_KEY
-
-                },
-
-                body:
-                    JSON.stringify(
-                        requestBody
-                    )
-
-            }
-
-        );
-
-
-    /*
-        Handle HTTP errors.
-    */
-
-    if (!response.ok) {
-
-        let errorMessage =
-            `Gemini API error: HTTP ${response.status}`;
-
-
-        try {
-
-            const errorData =
-                await response.json();
-
-
-            if (
-                errorData &&
-                errorData.error &&
-                errorData.error.message
-            ) {
-
-                errorMessage =
-                    errorData.error.message;
-
-            }
-
-        } catch (error) {
-
-            /*
-                Ignore JSON parsing errors.
-            */
-
-        }
-
-
-        throw new Error(
-            errorMessage
-        );
-    }
-
-
-    /*
-        Read JSON response.
-    */
-
-    const data =
-        await response.json();
-
-
-    /*
-        Gemini normally returns:
-
-        candidates
-          -> content
-             -> parts
-                -> text
-    */
-
-    const candidates =
-        data &&
-        data.candidates
-            ? data.candidates
-            : [];
-
-
-    if (!candidates.length) {
-
-        throw new Error(
-            "Gemini returned no translation."
-        );
-    }
-
-
-    const parts =
-        candidates[0] &&
-        candidates[0].content &&
-        candidates[0].content.parts
-            ? candidates[0].content.parts
-            : [];
-
-
-    const translatedText =
-        parts
-            .map(
-                part =>
-                    part.text || ""
-            )
-            .join("")
-            .trim();
-
-
-    if (!translatedText) {
-
-        throw new Error(
-            "Gemini returned an empty translation."
-        );
-    }
-
-
-    return cleanTranslation(
-        translatedText
     );
 }
 
 
 /* =========================================================
-   CLEAN AI RESPONSE
-========================================================= */
+   WAIT FUNCTION
+   ========================================================= */
 
-function cleanTranslation(text) {
+function wait(milliseconds) {
 
-    let result =
-        text.trim();
-
-
-    /*
-        Remove accidental labels.
-    */
-
-    result =
-        result.replace(
-            /^translation\s*:\s*/i,
-            ""
-        );
-
-
-    result =
-        result.replace(
-            /^english\s*:\s*/i,
-            ""
-        );
-
-
-    result =
-        result.replace(
-            /^english translation\s*:\s*/i,
-            ""
-        );
-
-
-    /*
-        Remove surrounding quotation marks
-        if Gemini accidentally adds them.
-    */
-
-    if (
-        result.length >= 2 &&
-        (
-            (
-                result.startsWith('"') &&
-                result.endsWith('"')
+    return new Promise(
+        resolve =>
+            setTimeout(
+                resolve,
+                milliseconds
             )
-            ||
-            (
-                result.startsWith("'") &&
-                result.endsWith("'")
-            )
-        )
-    ) {
-
-        result =
-            result
-                .slice(
-                    1,
-                    -1
-                )
-                .trim();
-
-    }
-
-
-    return result;
+    );
 }
 
 
 /* =========================================================
-   MAIN TRANSLATION
-========================================================= */
+   GEMINI REQUEST
+   ========================================================= */
+
+async function requestGeminiTranslation(text) {
+
+    for (
+        let attempt = 1;
+        attempt <= MAX_RETRIES;
+        attempt++
+    ) {
+
+        let controller;
+        let timeoutId;
+
+
+        try {
+
+            controller =
+                new AbortController();
+
+
+            timeoutId =
+                setTimeout(
+                    () => {
+                        controller.abort();
+                    },
+                    REQUEST_TIMEOUT
+                );
+
+
+            const requestBody = {
+
+                system_instruction: {
+
+                    parts: [
+                        {
+                            text:
+                                SYSTEM_INSTRUCTION
+                        }
+                    ]
+
+                },
+
+
+                contents: [
+
+                    {
+                        role: "user",
+
+                        parts: [
+
+                            {
+                                text: text
+                            }
+
+                        ]
+                    }
+
+                ],
+
+
+                generationConfig: {
+
+                    maxOutputTokens: 500,
+
+                    thinkingConfig: {
+
+                        thinkingLevel:
+                            "low"
+
+                    }
+
+                }
+
+            };
+
+
+            const response =
+                await fetch(
+                    GEMINI_ENDPOINT,
+                    {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json",
+
+                            "x-goog-api-key":
+                                GEMINI_API_KEY
+
+                        },
+
+                        body:
+                            JSON.stringify(
+                                requestBody
+                            ),
+
+                        signal:
+                            controller.signal
+
+                    }
+                );
+
+
+            clearTimeout(timeoutId);
+
+
+            let data;
+
+
+            try {
+
+                data =
+                    await response.json();
+
+            } catch (jsonError) {
+
+                throw new Error(
+                    "Gemini returned an invalid response."
+                );
+
+            }
+
+
+            /* =================================================
+               TEMPORARY HIGH-DEMAND / SERVER ERROR
+               ================================================= */
+
+            if (
+                response.status === 429 ||
+                response.status === 500 ||
+                response.status === 502 ||
+                response.status === 503 ||
+                response.status === 504
+            ) {
+
+                const apiMessage =
+                    data?.error?.message ||
+                    "Gemini is temporarily busy.";
+
+
+                console.warn(
+                    `Gemini temporary error. Attempt ${attempt}/${MAX_RETRIES}:`,
+                    apiMessage
+                );
+
+
+                if (
+                    attempt <
+                    MAX_RETRIES
+                ) {
+
+                    const waitTime =
+                        attempt === 1
+                            ? 2000
+                            : attempt === 2
+                                ? 5000
+                                : 8000;
+
+
+                    showStatus(
+                        `Gemini is busy. Retrying automatically... (${attempt}/${MAX_RETRIES})`,
+                        ""
+                    );
+
+
+                    await wait(
+                        waitTime
+                    );
+
+
+                    continue;
+
+                }
+
+
+                throw new Error(
+                    "Gemini is currently experiencing high demand. Please wait a moment and try again."
+                );
+
+            }
+
+
+            /* =================================================
+               OTHER API ERROR
+               ================================================= */
+
+            if (!response.ok) {
+
+                const apiMessage =
+                    data?.error?.message ||
+                    `Gemini request failed with HTTP ${response.status}.`;
+
+
+                throw new Error(
+                    apiMessage
+                );
+
+            }
+
+
+            /* =================================================
+               EXTRACT TRANSLATION
+               ================================================= */
+
+            let translatedText = "";
+
+
+            if (
+                data?.candidates?.length > 0
+            ) {
+
+                const candidate =
+                    data.candidates[0];
+
+
+                if (
+                    candidate.content &&
+                    candidate.content.parts
+                ) {
+
+                    translatedText =
+                        candidate.content.parts
+                            .filter(
+                                part =>
+                                    typeof part.text ===
+                                    "string"
+                            )
+                            .map(
+                                part =>
+                                    part.text
+                            )
+                            .join("")
+                            .trim();
+
+                }
+
+            }
+
+
+            if (!translatedText) {
+
+                console.error(
+                    "Unexpected Gemini response:",
+                    data
+                );
+
+
+                throw new Error(
+                    "Gemini returned no translation. Please try again."
+                );
+
+            }
+
+
+            return translatedText;
+
+
+        } catch (error) {
+
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+
+
+            /* =============================================
+               TIMEOUT
+               ============================================= */
+
+            if (
+                error.name ===
+                "AbortError"
+            ) {
+
+                if (
+                    attempt <
+                    MAX_RETRIES
+                ) {
+
+                    showStatus(
+                        `Gemini took too long. Retrying... (${attempt}/${MAX_RETRIES})`,
+                        ""
+                    );
+
+
+                    await wait(
+                        attempt * 2000
+                    );
+
+
+                    continue;
+
+                }
+
+
+                throw new Error(
+                    "Gemini took too long to respond. Please try again."
+                );
+
+            }
+
+
+            /*
+               Do not retry normal errors such as:
+               - invalid API key
+               - invalid request
+               - invalid model
+            */
+
+            throw error;
+
+        }
+
+    }
+
+
+    throw new Error(
+        "Translation failed."
+    );
+
+}
+
+
+/* =========================================================
+   MAIN TRANSLATE FUNCTION
+   ========================================================= */
 
 async function translateText() {
 
@@ -1005,31 +737,19 @@ async function translateText() {
         inputText.value.trim();
 
 
-    /*
-        Empty input.
-    */
+    /* ---------- Empty ---------- */
 
     if (!text) {
 
-        showStatus(
-            "Please enter some Roman Urdu or Urdu first.",
-            "error"
+        outputText.textContent =
+            "Your English translation will appear here...";
+
+        outputText.classList.add(
+            "placeholder"
         );
 
-        inputText.focus();
-
-        return;
-    }
-
-
-    /*
-        Character limit.
-    */
-
-    if (text.length > 5000) {
-
         showStatus(
-            "Please keep the message under 5000 characters.",
+            "Please enter some Roman Urdu or Urdu text.",
             "error"
         );
 
@@ -1037,17 +757,36 @@ async function translateText() {
     }
 
 
-    /*
-        Detect language.
-    */
+    /* ---------- Length ---------- */
 
-    const detectedType =
-        detectInputType(text);
+    if (
+        text.length >
+        MAX_LENGTH
+    ) {
+
+        showStatus(
+            `Please keep your message under ${MAX_LENGTH} characters.`,
+            "error"
+        );
+
+        return;
+    }
 
 
-    /*
-        Start loading.
-    */
+    /* ---------- API key ---------- */
+
+    if (!hasValidApiKey()) {
+
+        showStatus(
+            "Gemini API key is missing. Add your API key in script.js.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    /* ---------- Loading ---------- */
 
     setLoading(true);
 
@@ -1055,59 +794,60 @@ async function translateText() {
     outputText.textContent =
         "Translating...";
 
-
     outputText.classList.remove(
         "placeholder"
     );
 
 
-    translationInfo.classList.add(
-        "hidden"
-    );
+    if (translationInfo) {
+
+        translationInfo.classList.add(
+            "hidden"
+        );
+
+    }
 
 
     showStatus(
-        "AI is translating...",
+        "Gemini is understanding your message...",
         ""
     );
 
 
     try {
 
-        /*
-            Call Gemini.
-        */
-
-        const translation =
-            await translateWithGemini(
+        const translatedText =
+            await requestGeminiTranslation(
                 text
             );
 
 
-        /*
-            Display result.
-        */
+        /* ---------- Success ---------- */
 
         outputText.textContent =
-            translation;
+            translatedText;
 
-
-        /*
-            Display information.
-        */
-
-        translationInfoText.textContent =
-            `${detectedType} detected. Gemini translated the complete sentence using context.`;
-
-
-        translationInfo.classList.remove(
-            "hidden"
+        outputText.classList.remove(
+            "placeholder"
         );
 
 
-        /*
-            Success message.
-        */
+        if (translationInfoText) {
+
+            translationInfoText.textContent =
+                "Translated by Gemini AI";
+
+        }
+
+
+        if (translationInfo) {
+
+            translationInfo.classList.remove(
+                "hidden"
+            );
+
+        }
+
 
         showStatus(
             "Translation completed.",
@@ -1118,136 +858,47 @@ async function translateText() {
     } catch (error) {
 
         console.error(
-            "Gemini translation error:",
+            "Translation error:",
             error
         );
 
 
         outputText.textContent =
-            "Unable to translate this message.";
-
+            "Unable to translate.";
 
         outputText.classList.remove(
             "placeholder"
         );
 
 
-        /*
-            Show useful error.
-        */
-
-        let message =
-            "Translation failed. Please try again.";
-
-
-        if (
-            error &&
-            error.message
-        ) {
-
-            message =
-                error.message;
-
-        }
-
-
         showStatus(
-            message,
+            error.message ||
+            "Unable to translate. Please try again.",
             "error"
         );
 
 
-    } finally {
+        if (translationInfo) {
 
-        /*
-            Stop loading.
-        */
+            translationInfo.classList.add(
+                "hidden"
+            );
+
+        }
+
+
+    } finally {
 
         setLoading(false);
 
     }
+
 }
-
-
-/* =========================================================
-   LOADING STATE
-========================================================= */
-
-function setLoading(
-    isLoading
-) {
-
-    translateButton.disabled =
-        isLoading;
-
-
-    if (isLoading) {
-
-        buttonText.textContent =
-            "Translating";
-
-        loadingSpinner.classList.remove(
-            "hidden"
-        );
-
-    } else {
-
-        buttonText.textContent =
-            "Translate";
-
-        loadingSpinner.classList.add(
-            "hidden"
-        );
-
-    }
-}
-
-
-/* =========================================================
-   STATUS MESSAGE
-========================================================= */
-
-function showStatus(
-    message,
-    type
-) {
-
-    statusMessage.textContent =
-        message;
-
-
-    statusMessage.className =
-        "status";
-
-
-    if (type) {
-
-        statusMessage.classList.add(
-            type
-        );
-
-    }
-}
-
-
-/* =========================================================
-   CHARACTER COUNTER
-========================================================= */
-
-inputText.addEventListener(
-    "input",
-    function () {
-
-        characterCount.textContent =
-            `${inputText.value.length} / 5000`;
-
-    }
-);
 
 
 /* =========================================================
    TRANSLATE BUTTON
-========================================================= */
+   ========================================================= */
 
 translateButton.addEventListener(
     "click",
@@ -1256,22 +907,16 @@ translateButton.addEventListener(
 
 
 /* =========================================================
-   ENTER KEY
-========================================================= */
+   CTRL + ENTER
+   ========================================================= */
 
 inputText.addEventListener(
     "keydown",
-    function (event) {
-
-        /*
-            Enter = translate
-
-            Shift + Enter = new line
-        */
+    function(event) {
 
         if (
             event.key === "Enter" &&
-            !event.shiftKey
+            event.ctrlKey
         ) {
 
             event.preventDefault();
@@ -1285,32 +930,30 @@ inputText.addEventListener(
 
 
 /* =========================================================
-   CLEAR BUTTON
-========================================================= */
+   CLEAR
+   ========================================================= */
 
 clearButton.addEventListener(
     "click",
-    function () {
+    function() {
 
         inputText.value = "";
 
-
         outputText.textContent =
-            "Your English translation will appear here.";
-
+            "Your English translation will appear here...";
 
         outputText.classList.add(
             "placeholder"
         );
 
 
-        characterCount.textContent =
-            "0 / 5000";
+        if (translationInfo) {
 
+            translationInfo.classList.add(
+                "hidden"
+            );
 
-        translationInfo.classList.add(
-            "hidden"
-        );
+        }
 
 
         showStatus(
@@ -1319,6 +962,8 @@ clearButton.addEventListener(
         );
 
 
+        updateCharacterCount();
+
         inputText.focus();
 
     }
@@ -1326,27 +971,25 @@ clearButton.addEventListener(
 
 
 /* =========================================================
-   COPY BUTTON
-========================================================= */
+   COPY
+   ========================================================= */
 
 copyButton.addEventListener(
     "click",
-    async function () {
+    async function() {
 
         const text =
             outputText.textContent.trim();
 
 
-        /*
-            Don't copy placeholder.
-        */
-
         if (
             !text ||
             text ===
-            "Your English translation will appear here." ||
+            "Your English translation will appear here..." ||
             text ===
-            "Unable to translate this message."
+            "Translating..." ||
+            text ===
+            "Unable to translate."
         ) {
 
             showStatus(
@@ -1365,19 +1008,32 @@ copyButton.addEventListener(
             );
 
 
+            const original =
+                copyButton.textContent;
+
+
+            copyButton.textContent =
+                "Copied!";
+
+
             showStatus(
-                "Translation copied.",
+                "Translation copied to clipboard.",
                 "success"
             );
 
 
-        } catch (error) {
+            setTimeout(
+                () => {
 
-            console.error(
-                "Copy error:",
-                error
+                    copyButton.textContent =
+                        original;
+
+                },
+                1500
             );
 
+
+        } catch (error) {
 
             showStatus(
                 "Could not copy the translation.",
@@ -1392,39 +1048,53 @@ copyButton.addEventListener(
 
 /* =========================================================
    EXAMPLE BUTTONS
-========================================================= */
+   ========================================================= */
 
 examples.forEach(
-    function (example) {
+    function(example) {
 
         example.addEventListener(
             "click",
-            function () {
+            function() {
 
-                const text =
-                    example.dataset.text;
+                /*
+                   IMPORTANT:
+                   Use the button's actual visible text.
+
+                   This fixes the "undefined" problem.
+                */
+
+                const exampleText =
+                    example.textContent.trim();
+
+
+                if (!exampleText) {
+                    return;
+                }
 
 
                 inputText.value =
-                    text;
+                    exampleText;
 
 
-                characterCount.textContent =
-                    `${text.length} / 5000`;
+                updateCharacterCount();
 
 
                 outputText.textContent =
-                    "Your English translation will appear here.";
-
+                    "Your English translation will appear here...";
 
                 outputText.classList.add(
                     "placeholder"
                 );
 
 
-                translationInfo.classList.add(
-                    "hidden"
-                );
+                if (translationInfo) {
+
+                    translationInfo.classList.add(
+                        "hidden"
+                    );
+
+                }
 
 
                 showStatus(
@@ -1443,8 +1113,9 @@ examples.forEach(
 
 
 /* =========================================================
-   INITIAL STATE
-========================================================= */
+   INITIALIZE
+   ========================================================= */
 
-characterCount.textContent =
-    "0 / 5000";
+updateCharacterCount();
+
+setLoading(false);
