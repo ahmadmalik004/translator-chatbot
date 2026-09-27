@@ -41,8 +41,7 @@ const examples =
  */
 
 const TRANSLATE_API_URL =
-    "translator-chatbot.malikahmad00004.workers.dev";
-
+  "https://translator-chatbot.malikahmad00004.workers.dev/translate";
 
 const MAX_LENGTH = 5000;
 
